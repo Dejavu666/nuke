@@ -1,102 +1,309 @@
 id: nuke-workflow
 
 info:
-  name: Webmin Security Checks
-  author: mojolabs-id
-  description: A simple workflow that runs nuclei templates on a given target.
+  name: LEARNX Nuke - Smart Tech-Based Vulnerability Workflow
+  author: dejavu666,mojolabs-id
+  description: |
+    Auto-detect technology stack lalu jalankan CVE & misconfiguration yang relevan.
+    Dibuat untuk bug bounty hunting - efisien, tidak buang bandwidth.
+  tags: workflow,cve,exposure,misconfig
+
+# ══════════════════════════════════════════════════════════════
+#  STEP 1: Deteksi teknologi → scan CVE yang relevan per-tech
+# ══════════════════════════════════════════════════════════════
 workflows:
   - template: http/technologies/tech-detect.yaml
     matchers:
+
+      # ── LARAVEL ─────────────────────────────────────────────
       - name: laravel
         subtemplates:
-          - template: http/cves/2021/CVE-2021-3129.yaml
-          - template: http/cves/2017/CVE-2017-9841.yaml
-          - template: http/cves/2022/CVE-2022-40734.yaml
+          - template: http/cves/2021/CVE-2021-3129.yaml      # RCE debug mode
+          - template: http/cves/2022/CVE-2022-40734.yaml      # Path traversal
+          - template: http/cves/2017/CVE-2017-9841.yaml       # phpunit RCE
           - template: http/exposed-panels/laravel-filemanager.yaml
+          - template: http/misconfiguration/laravel-debug-infoleak.yaml
+          - template: http/exposures/configs/laravel-env.yaml
+
       - name: new_laravel
         subtemplates:
           - template: http/cves/2021/CVE-2021-3129.yaml
-          - template: http/cves/2017/CVE-2017-9841.yaml
           - template: http/cves/2022/CVE-2022-40734.yaml
           - template: http/exposed-panels/laravel-filemanager.yaml
-      - name: yii
+          - template: http/misconfiguration/laravel-debug-infoleak.yaml
+
+      # ── WORDPRESS ───────────────────────────────────────────
+      - name: wordpress
         subtemplates:
-          - template: http/exposures/configs/yii-debugger.yaml
+          - template: http/cves/2022/CVE-2022-1119.yaml       # File inclusion
+          - template: http/cves/2021/CVE-2021-39312.yaml      # True Ranker SQLi
+          - template: http/cves/2021/CVE-2021-24507.yaml      # Astra SQLi
+          - template: http/cves/2022/CVE-2022-0441.yaml       # MasterStudy LMS
+          - template: http/cves/2022/CVE-2022-1386.yaml       # Fusion Builder SSRF
+          - template: http/cves/2023/CVE-2023-2732.yaml       # MStore API Auth Bypass
+          - template: http/cves/2024/CVE-2024-27956.yaml      # WP Automatic SQLi (2024)
+          - template: http/cves/2024/CVE-2024-2194.yaml       # WP Statistics XSS (2024)
+          - template: http/vulnerabilities/wordpress/wordpress-accessible-wpconfig.yaml
+          - template: http/exposures/configs/wordpress-debug-log.yaml
+          - template: http/exposed-panels/wordpress-login.yaml
+          - template: http/misconfiguration/wordpress-user-enumeration.yaml
+
+      # ── DRUPAL ──────────────────────────────────────────────
+      - name: drupal
+        subtemplates:
+          - template: http/cves/2018/CVE-2018-7600.yaml       # Drupalgeddon2 RCE
+          - template: http/cves/2018/CVE-2018-7602.yaml       # Drupalgeddon3 RCE
+          - template: http/cves/2019/CVE-2019-6340.yaml       # REST RCE
+          - template: http/cves/2022/CVE-2022-25271.yaml      # Drupal CSRF
+          - template: http/cves/2023/CVE-2023-44372.yaml      # XSS
+          - template: http/exposed-panels/drupal-login.yaml
+
+      # ── JOOMLA ──────────────────────────────────────────────
+      - name: joomla
+        subtemplates:
+          - template: http/cves/2023/CVE-2023-23752.yaml      # Unauth info disclosure
+          - template: http/cves/2015/CVE-2015-8562.yaml       # RCE
+          - template: http/exposures/configs/joomla-config-disclosure.yaml
+          - template: http/exposed-panels/joomla-admin.yaml
+
+      # ── MAGENTO ─────────────────────────────────────────────
+      - name: magento
+        subtemplates:
+          - template: http/cves/2020/CVE-2020-5776.yaml
+          - template: http/cves/2020/CVE-2020-5777.yaml
+          - template: http/cves/2022/CVE-2022-24086.yaml      # Template injection RCE
+          - template: http/cves/2024/CVE-2024-34102.yaml      # XXE RCE (2024 critical)
+          - template: http/exposures/configs/magento-config-disclosure.yaml
+          - template: http/vulnerabilities/magento/magento-unprotected-dev-files.yaml
+
+      # ── SYMFONY ─────────────────────────────────────────────
       - name: symfony
         subtemplates:
           - template: http/exposures/configs/symfony-profiler.yaml
-      - name: gogs
+          - template: http/cves/2021/CVE-2021-41268.yaml      # Remember me bypass
+          - template: http/cves/2022/CVE-2022-24894.yaml      # Token disclosure
+
+      # ── YII ─────────────────────────────────────────────────
+      - name: yii
         subtemplates:
-          - template: http/cves/2022/CVE-2022-0415.yaml
+          - template: http/exposures/configs/yii-debugger.yaml
+
+      # ── SPRING / JAVA ────────────────────────────────────────
+      - name: spring
+        subtemplates:
+          - template: http/cves/2022/CVE-2022-22965.yaml      # Spring4Shell RCE
+          - template: http/cves/2022/CVE-2022-22963.yaml      # Spring Cloud RCE
+          - template: http/cves/2021/CVE-2021-21234.yaml      # Spring Boot Actuator
+          - template: http/cves/2020/CVE-2020-5410.yaml       # Path traversal
+          - template: http/exposures/configs/spring-actuator.yaml
+          - template: http/misconfiguration/springboot-actuator.yaml
+
+      - name: springboot
+        subtemplates:
+          - template: http/exposures/configs/spring-actuator.yaml
+          - template: http/misconfiguration/springboot-actuator.yaml
+          - template: http/cves/2022/CVE-2022-22965.yaml
+
+      # ── APACHE ──────────────────────────────────────────────
+      - name: apache
+        subtemplates:
+          - template: http/cves/2021/CVE-2021-41773.yaml      # Path traversal RCE
+          - template: http/cves/2021/CVE-2021-42013.yaml      # Path traversal RCE v2
+          - template: http/cves/2022/CVE-2022-31813.yaml      # Header smuggling
+          - template: http/misconfiguration/http-missing-security-headers.yaml
+          - template: http/exposures/configs/apache-server-status.yaml
+          - template: http/exposures/configs/apache-server-info.yaml
+
+      # ── NGINX ────────────────────────────────────────────────
+      - name: nginx
+        subtemplates:
+          - template: http/misconfiguration/nginx-alias-traversal.yaml
+          - template: http/misconfiguration/laravel-debug-infoleak.yaml
+          - template: http/exposures/configs/symfony-profiler.yaml
+          - template: http/exposures/configs/yii-debugger.yaml
+          - template: http/cves/2021/CVE-2021-3129.yaml
+          - template: http/exposures/configs/magento-config-disclosure.yaml
+          - template: http/exposures/backups/zip-backup-files.yaml
+          - template: http/exposures/backups/sql-dump.yaml
+
+      # ── IIS / ASP.NET ────────────────────────────────────────
+      - name: microsoft-iis
+        subtemplates:
+          - template: http/cves/2021/CVE-2021-31166.yaml      # HTTP.sys RCE
+          - template: http/misconfiguration/iis-shortname.yaml
+          - template: http/exposures/configs/asp-debug.yaml
+
+      - name: asp.net
+        subtemplates:
+          - template: http/cves/2021/CVE-2021-26855.yaml      # Exchange SSRF
+          - template: http/misconfiguration/iis-shortname.yaml
+
+      # ── APACHE TOMCAT ────────────────────────────────────────
+      - name: tomcat
+        subtemplates:
+          - template: http/cves/2020/CVE-2020-1938.yaml       # Ghostcat AJP RCE
+          - template: http/cves/2019/CVE-2019-0232.yaml       # CGI RCE Windows
+          - template: http/default-logins/tomcat/tomcat-default-login.yaml
+          - template: http/exposed-panels/tomcat-manager.yaml
+
+      # ── JENKINS ─────────────────────────────────────────────
+      - name: jenkins
+        subtemplates:
+          - template: http/cves/2024/CVE-2024-23897.yaml      # Arbitrary file read (2024 critical)
+          - template: http/cves/2023/CVE-2023-27898.yaml      # XSS
+          - template: http/cves/2018/CVE-2018-1000861.yaml    # RCE
+          - template: http/default-logins/jenkins/jenkins-default-login.yaml
+          - template: http/exposed-panels/jenkins-asyncpeople.yaml
+          - template: http/misconfiguration/jenkins-unauthenticated-user-creation.yaml
+
+      # ── GITLAB ──────────────────────────────────────────────
+      - name: gitlab
+        subtemplates:
+          - template: http/cves/2021/CVE-2021-22205.yaml      # RCE unauth
+          - template: http/cves/2023/CVE-2023-7028.yaml       # Account takeover (2023 critical)
+          - template: http/cves/2024/CVE-2024-0402.yaml       # Path traversal (2024)
+          - template: http/exposed-panels/gitlab-public-repos.yaml
+          - template: http/misconfiguration/gitlab-publicly-accessible.yaml
+
+      # ── GRAFANA ─────────────────────────────────────────────
+      - name: grafana
+        subtemplates:
+          - template: http/cves/2021/CVE-2021-43798.yaml      # Path traversal (critical)
+          - template: http/cves/2022/CVE-2022-32275.yaml
+          - template: http/default-logins/grafana/grafana-default-login.yaml
+
+      # ── KIBANA / ELASTICSEARCH ───────────────────────────────
+      - name: kibana
+        subtemplates:
+          - template: http/cves/2019/CVE-2019-7609.yaml       # Prototype pollution RCE
+          - template: http/misconfiguration/kibana-unauthenticated.yaml
+
+      - name: elasticsearch
+        subtemplates:
+          - template: http/misconfiguration/elasticsearch-unauth.yaml
+          - template: http/exposures/apis/elasticsearch-api.yaml
+
+      # ── WEBMIN ──────────────────────────────────────────────
+      - name: webmin
+        subtemplates:
+          - template: http/default-logins/webmin-default-login.yaml
+          - template: http/cves/2022/CVE-2022-36446.yaml      # RCE
+          - template: http/cves/2022/CVE-2022-0824.yaml       # Auth bypass RCE
+          - template: http/cves/2019/CVE-2019-15642.yaml      # RCE
+          - template: http/cves/2019/CVE-2019-15107.yaml      # Password change RCE
+
+      # ── PHPMYADMIN ──────────────────────────────────────────
+      - name: phpmyadmin
+        subtemplates:
+          - template: http/default-logins/phpmyadmin/phpmyadmin-default-login.yaml
+          - template: http/cves/2018/CVE-2018-12613.yaml      # LFI
+          - template: http/cves/2022/CVE-2022-23807.yaml
+
+      # ── MOODLE ──────────────────────────────────────────────
       - name: moodle
         subtemplates:
           - template: http/cves/2023/CVE-2023-30943.yaml
+          - template: http/cves/2022/CVE-2022-0332.yaml       # SQLi RCE
+          - template: http/cves/2021/CVE-2021-36393.yaml      # SQLi
+
+      # ── GOGS / GITEA ─────────────────────────────────────────
+      - name: gogs
+        subtemplates:
+          - template: http/cves/2022/CVE-2022-0415.yaml
+          - template: http/cves/2023/CVE-2023-27584.yaml      # Auth bypass
+
+      - name: gitea
+        subtemplates:
+          - template: http/cves/2023/CVE-2023-27584.yaml
+
+      # ── VBULLETIN ───────────────────────────────────────────
       - name: vbulletin
         subtemplates:
           - template: http/cves/2023/CVE-2023-25135.yaml
+          - template: http/cves/2019/CVE-2019-16759.yaml      # RCE (critical)
+
+      # ── CWP (CentOS WebPanel) ────────────────────────────────
       - name: cwpsrv
         subtemplates:
           - template: http/cves/2022/CVE-2022-44877.yaml
           - template: http/cves/2018/CVE-2018-18323.yaml
-      - name: drupal
+
+      # ── NEXTCLOUD / OWNCLOUD ─────────────────────────────────
+      - name: nextcloud
         subtemplates:
-          - template: http/cves/2018/CVE-2018-7600.yaml
-          - template: http/cves/2018/CVE-2018-7602.yaml
-          - template: http/cves/2018/CVE-2018-9205.yaml
-          - template: http/cves/2019/CVE-2019-6340.yaml
-      - name: magento
+          - template: http/cves/2023/CVE-2023-49103.yaml      # Info disclosure (critical)
+          - template: http/cves/2022/CVE-2022-31086.yaml
+          - template: http/misconfiguration/nextcloud-default-credential.yaml
+
+      - name: owncloud
         subtemplates:
-          - template: http/cves/2015/CVE-2015-2067.yaml
-          - template: http/cves/2020/CVE-2020-5776.yaml
-          - template: http/cves/2020/CVE-2020-5777.yaml
-          - template: http/exposures/configs/magento-config-disclosure.yaml
-          - template: http/vulnerabilities/magento/magento-unprotected-dev-files.yaml
-      - name: wordpress
+          - template: http/cves/2023/CVE-2023-49103.yaml      # GraphAPI disclosure
+
+      # ── JUPYTER ─────────────────────────────────────────────
+      - name: jupyter
         subtemplates:
-          - template: http/cves/2022/CVE-2022-1119.yaml
-          - template: http/cves/2021/CVE-2021-39312.yaml
-          - template: http/vulnerabilities/wordpress/wordpress-accessible-wpconfig.yaml
-      - name: webmin
+          - template: http/misconfiguration/jupyter-notebook-unauth.yaml
+          - template: http/exposed-panels/jupyter-lab.yaml
+
+      # ── REDIS ───────────────────────────────────────────────
+      - name: redis
         subtemplates:
-          - template: http/default-logins/webmin-default-login.yaml
-          - template: http/cves/2022/CVE-2022-36446.yaml
-          - template: http/cves/2022/CVE-2022-0824.yaml
-          - template: http/cves/2019/CVE-2019-15642.yaml
-          - template: http/cves/2019/CVE-2019-15107.yaml
-      - name: phpmyadmin
-        subtemplates:
-          - template: http/default-logins/phpmyadmin/phpmyadmin-default-login.yaml
+          - template: http/exposures/configs/redis-config.yaml
+
+      # ── PHP (generic) ────────────────────────────────────────
       - name: php
-      - name: nginx
         subtemplates:
-          - template: http/misconfiguration/laravel-debug-infoleak.yaml
-          - template: http/exposed-panels/laravel-filemanager.yaml
-          - template: http/exposures/configs/magento-config-disclosure.yaml
-          - template: http/vulnerabilities/magento/magento-unprotected-dev-files.yaml
-          - template: http/exposures/configs/symfony-profiler.yaml
-          - template: http/exposures/configs/yii-debugger.yaml
-          - template: http/cves/2021/CVE-2021-3129.yaml
-          - template: http/cves/2017/CVE-2017-9841.yaml
-          - template: http/cves/2022/CVE-2022-40734.yaml
-          - template: http/exposures/backups/zip-backup-files.yaml
-          - template: http/exposures/backups/sql-dump.yaml
+          - template: http/cves/2017/CVE-2017-9841.yaml       # phpunit RCE
+          - template: http/cves/2021/CVE-2021-4034.yaml       # php-cgi RCE
+          - template: http/exposures/configs/phpinfo.yaml
+          - template: http/misconfiguration/php-errors.yaml
+
+      # ── NODE.JS / EXPRESS ────────────────────────────────────
+      - name: node.js
+        subtemplates:
+          - template: http/misconfiguration/node-debug.yaml
+          - template: http/exposures/configs/node-env-disclosure.yaml
+
+# ══════════════════════════════════════════════════════════════
+#  STEP 2: Selalu jalankan - tidak perlu deteksi tech
+#  Exposure, credential, config yang sering bocor
+# ══════════════════════════════════════════════════════════════
+
+  # Credentials & Cloud
   - template: http/exposures/configs/aws-config.yaml
   - template: http/exposures/configs/aws-credentials.yaml
   - template: http/exposures/configs/docker-compose-config.yaml
   - template: http/exposures/configs/dockerfile-hidden-disclosure.yaml
-#    subtemplates:
-#      - template: http/exposed-panels/db-admin-panel.yaml
   - template: http/exposures/configs/sftp-credentials-exposure.yaml
   - template: http/exposures/configs/sftp-deployment-config.yaml
-  - template: http/exposures/files/vscode-sftp.yaml
+  - template: http/exposures/configs/circleci-ssh-config.yaml
+  - template: http/exposures/configs/s3cfg-config.yaml
+  - template: http/exposures/configs/s3cmd-config.yaml
+
+  # Files & Config
   - template: http/vulnerabilities/generic/generic-env.yaml
   - template: http/exposures/configs/git-config.yaml
   - template: http/exposures/configs/config-json.yaml
   - template: http/exposures/configs/redis-config.yaml
-  - template: http/exposures/configs/s3cfg-config.yaml
-  - template: http/exposures/configs/s3cmd-config.yaml
-  - template: http/exposures/configs/circleci-ssh-config.yaml
+  - template: http/exposures/files/vscode-sftp.yaml
   - template: http/exposures/files/ftpconfig.yaml
-  - template: http/cves/2023/CVE-2023-36845.yaml
+  - template: http/exposures/files/yarn-lock.yaml
+  - template: http/exposures/files/package-json.yaml
+
+  # Backups & Dumps
+  - template: http/exposures/backups/zip-backup-files.yaml
+  - template: http/exposures/backups/sql-dump.yaml
+  - template: http/exposures/backups/log-files.yaml
+
+  # Misconfigurations
+  - template: http/misconfiguration/http-missing-security-headers.yaml
+  - template: http/misconfiguration/cors-misconfig.yaml
+  - template: http/misconfiguration/put-method-enabled.yaml
+  - template: http/misconfiguration/proxy-wpad.yaml
   - template: http/misconfiguration/kubernetes/kubernetes-pods.yaml
 
+  # CVE tanpa tech-detect (general/critical)
+  - template: http/cves/2023/CVE-2023-36845.yaml      # Juniper RCE
+  - template: http/cves/2023/CVE-2023-44487.yaml      # HTTP/2 Rapid Reset
+  - template: http/cves/2024/CVE-2024-21887.yaml      # Ivanti ConnectSecure RCE
+  - template: http/cves/2024/CVE-2024-6387.yaml       # OpenSSH regreSSHion (2024)
